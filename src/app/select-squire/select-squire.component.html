@@ -1,0 +1,9 @@
+<div class="select-container" 
+#container
+(mousedown)="clickDown($event)"
+>   
+<div class="select-box" #box>
+    <ng-content #name></ng-content>
+</div>
+    <div [hidden]="!isMove" class="line" #line [ngStyle]="lineStyle"></div>
+</div>

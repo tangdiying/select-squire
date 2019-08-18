@@ -1,0 +1,42 @@
+.line{
+    border:1px solid #000;
+    position: absolute;
+    background: lightblue;
+    box-sizing: border-box;
+}
+.child{
+    width: 100px;
+    height: 100px;
+    background: lightcoral;
+    margin: 10px;
+    flex: 0 0 auto;
+}
+.father{
+    display: flex;
+    flex-wrap: wrap;
+}
+*{
+    margin: 0;
+    padding: 0;
+}
+.block-top{
+    width: 200px;
+    height: 200px;
+    background-color: lightblue;
+}
+.block-left{
+    width: 200px;
+    height: 200px;
+    background-color: lightcyan;
+    flex: 0 0 auto;
+}
+.select-container{
+    position: relative;
+    /* height: 100%; */
+    /* height: 500px; */
+    width: 500px;
+    overflow: auto;
+}
+.select{
+    background: lightgoldenrodyellow !important;
+}
