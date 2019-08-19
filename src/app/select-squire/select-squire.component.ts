@@ -1,12 +1,13 @@
-import { Component, OnInit, Input, ViewChild, OnDestroy, Output, EventEmitter } from '@angular/core';
-import { fromEvent } from 'rxjs';
+import { Component, OnInit, Input, ViewChild, OnDestroy, Output, EventEmitter, AfterViewInit } from '@angular/core';
+import { fromEvent, interval } from 'rxjs';
 
 @Component({
   selector: 'app-select-squire',
   templateUrl: './select-squire.component.html',
   styleUrls: ['./select-squire.component.css']
 })
-export class SelectSquireComponent implements OnInit,OnDestroy {
+export class SelectSquireComponent implements OnInit,OnDestroy,AfterViewInit {
+  
   domOffsetX = null;
   domOffsetY = null;
   lineStyle = {};
@@ -17,6 +18,8 @@ export class SelectSquireComponent implements OnInit,OnDestroy {
   clickScroll = {};
   mouseMove=null;
   mouseUp=null;
+  scrollMove = {};
+  scrollupdownIntervel = null;
   @Input() handleClass:string;
   @Input() scrollClass:string;
   @Input() allData
@@ -34,6 +37,8 @@ export class SelectSquireComponent implements OnInit,OnDestroy {
     this.mouseMove.unsubscribe();
     this.mouseUp.unsubscribe();
   }
+  ngAfterViewInit(): void {
+  }
   clickDown(e){
     this.getAllOffset();
     this.oldPosition = {
@@ -46,9 +51,6 @@ export class SelectSquireComponent implements OnInit,OnDestroy {
         top:"0px"
       }
     }
-    // let scrollTop = this.container.nativeElement.scrollTop;
-    // let scrollLeft = this.container.nativeElement.scrollLeft;
-    // let scrollHeight = this.container.nativeElement.scrollHeight;
     let dom=this.checkScrollDom()['dom'];
     this.clickScroll = {
       top:dom.scrollTop,
@@ -66,12 +68,21 @@ export class SelectSquireComponent implements OnInit,OnDestroy {
     })
     this.mouseUp = fromEvent(document,"mouseup")
     .subscribe(e=>{
-      // console.log("")
       this.clickUp(e)
     })
   }
   clickMove(e){
     if(this.isMove){
+      if(e['pageY']>this.nowPosition['y']){
+        this.scrollMove['uptodown'] = true
+      }else{
+        this.scrollMove['uptodown'] = false
+      }
+      if(e['pageX']>this.nowPosition['x']){
+        this.scrollMove['lefttoright'] = true
+      }else{
+        this.scrollMove['lefttoright'] = false
+      }
       this.nowPosition = {
         x:e['pageX'],
         y:e['pageY']
@@ -83,57 +94,89 @@ export class SelectSquireComponent implements OnInit,OnDestroy {
   createFrame(old,now){
     let dom = this.checkScrollDom()['dom'];
     let type = this.checkScrollDom()['type']
-    // let scrollTop = this.container.nativeElement.scrollTop;
-    // let scrollLeft = this.container.nativeElement.scrollLeft;
+    if(type){
+      this.handleOtherMove(old,now,dom)
+    }else{
+      this.handleBodyMove(old,now,dom)
+    }
+  }
+  handleOtherMove(old,now,dom){
     let scrollTop = dom.scrollTop;
     let scrollLeft = dom.scrollLeft;
-    if(now['y']>this.domOffsetY+dom.clientHeight&&type){
+    if(now['y']>this.domOffsetY+dom.clientHeight){
       now['y'] = this.domOffsetY+dom.clientHeight
-    }else if(now['y']>this.domOffsetY+dom.clientHeight&&!type){
-      now['y'] = dom.scrollHeight
+      this.scrollMove['uptodown'] = true;
     }
-    if(now['x']>this.domOffsetX+dom.clientWidth&&type){
+    if(now['x']>this.domOffsetX+dom.clientWidth){
       now['x'] = this.domOffsetX+this.container.nativeElement.clientWidth
-    }else if(now['x']>this.domOffsetX+dom.clientWidth&&!type){
-      now['x'] = dom.clientWidth
+      this.scrollMove['lefttodown'] = true;
     }
     let width;
     let height;
     let left;
     let top;
-    if(type){
-      width = Math.abs(now['x']-old['x'])+scrollLeft-this.clickScroll['left']
-      height = Math.abs(now['y']-old['y'])+scrollTop-this.clickScroll['top']
-    }else{
-      width = Math.abs(now['x']-old['x'])+scrollTop;
-      height = Math.abs(now['y']-old['y'])+scrollTop;
-    }
+    width = Math.abs(now['x']-old['x'])+scrollLeft-this.clickScroll['left']
+    height = Math.abs(now['y']-old['y'])+Math.abs(scrollTop-this.clickScroll['top'])
     if(now['x']>old['x']){
       left = old['x']-this.domOffsetX+this.clickScroll['left'];
     }else{
-      left = now['x']-this.domOffsetX+this.clickScroll['left'];
+      left = now['x']-this.domOffsetX+scrollLeft;
     }
     if(now['y']>old['y']){
       top = old['y']-this.domOffsetY+this.clickScroll['top'];
     }else{
-      top = now['y']-this.domOffsetY+this.clickScroll['top'];
+      top = now['y'] - this.domOffsetY+scrollTop;
     }
-    // if(height+top+50>this.container.nativeElement.clientHeight&&height+top<this.clickScroll['height']){
-    //   this.container.nativeElement.scrollTop+=5;
-    // }
-    // if(left+width+50>this.container.nativeElement.clientWidth&&left+width<this.clickScroll['width']){
-    //   this.container.nativeElement.scrollLeft+=5;
-    // }
-    if(height+top+50>dom.clientHeight&&height+top<this.clickScroll['height']&&type){
-      dom.scrollTop+=5;
-    }else if(height+top+50+this.domOffsetY>dom.clientHeight&&height+top<this.clickScroll['height']&&!type){
-      console.log(dom,type)
-      dom.scrollTop+=5;
+    if(height+top+50>dom.clientHeight+dom.scrollTop&&height+top<this.clickScroll['height']&&this.scrollMove['uptodown']){
+      dom.scrollTo(dom.scrollLeft,dom.scrollTop+5);
     }
-    if(left+width+50>dom.clientWidth&&left+width<this.clickScroll['width']&&type){
-      dom.scrollLeft+=5;
-    }else if(left+width+50>dom.clientWidth&&left+width<this.clickScroll['width']&&!type){
-      dom.scrollTop+=5;
+    if(now['y']-50<this.domOffsetY&&!this.scrollMove['uptodown']){
+      dom.scrollTo(dom.scrollLeft,dom.scrollTop-5);
+    }
+    if(left+width+50>dom.clientWidth+dom.scrollLeft&&left+width<this.clickScroll['width']&&this.scrollMove['lefttoright']){
+      dom.scrollTo(dom.scrollLeft+5,dom.scrollTop);
+    }
+    if(now['x']<this.domOffsetX&&!this.scrollMove['lefttoright']){
+      dom.scrollTo(dom.scrollLeft-5,dom.scrollTop);
+    }
+    this.createLine(width,height,left,top)
+  }
+  handleBodyMove(old,now,dom){
+    let scrollTop = dom.scrollTop;
+    let scrollLeft = dom.scrollLeft;
+    if(now['y']>dom.scrollHeight){
+      now['y'] = dom.scrollHeight
+    }
+    if(now['x']>dom.scrollWidth){
+      now['x'] = dom.scrollWidth
+    }
+    let width;
+    let height;
+    let left;
+    let top;
+    width = Math.abs(now['x']-old['x'])
+    height = Math.abs(now['y']-old['y'])
+    if(now['x']>old['x']){
+      left = old['x']-this.domOffsetX;
+    }else{
+      left = now['x']-this.domOffsetX;
+    }
+    if(now['y']>old['y']){
+      top = old['y']-this.domOffsetY;
+    }else{
+      top = now['y']-this.domOffsetY;
+    }
+    if(height+top+50+this.domOffsetY>dom.clientHeight+dom.scrollTop&&height+top+this.domOffsetY<this.clickScroll['height']+2&&this.scrollMove['uptodown']){
+      dom.scrollTo(dom.scrollLeft,dom.scrollTop+5)
+    }
+    if(now['y']-50<dom.scrollTop&&!this.scrollMove['uptodown']){
+      dom.scrollTo(dom.scrollLeft,dom.scrollTop-5)
+    }
+    if(left+width+50+this.domOffsetX>dom.clientWidth+dom.scrollLeft&&left+width+this.domOffsetX<this.clickScroll['width']+2&&this.scrollMove['lefttoright']){
+      dom.scrollTo(dom.scrollLeft+5,dom.scrollTop)
+    }
+    if(now['x']-50<dom.scrollLeft&&!this.scrollMove['lefttoright']){
+      dom.scrollTo(dom.scrollLeft-5,dom.scrollTop)
     }
     this.createLine(width,height,left,top)
   }
