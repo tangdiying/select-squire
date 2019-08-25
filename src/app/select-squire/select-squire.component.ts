@@ -20,6 +20,7 @@ export class SelectSquireComponent implements OnInit,OnDestroy,AfterViewInit {
   mouseUp=null;
   scrollMove = {};
   scrollupdownIntervel = null;
+  scrollleftrightInterval = null;
   @Input() handleClass:string;
   @Input() scrollClass:string;
   @Input() allData
@@ -103,19 +104,25 @@ export class SelectSquireComponent implements OnInit,OnDestroy,AfterViewInit {
   handleOtherMove(old,now,dom){
     let scrollTop = dom.scrollTop;
     let scrollLeft = dom.scrollLeft;
+    if(this.scrollupdownIntervel){
+      clearInterval(this.scrollupdownIntervel)
+    }
+    if(this.scrollleftrightInterval){
+      clearInterval(this.scrollleftrightInterval)
+    }
     if(now['y']>this.domOffsetY+dom.clientHeight){
       now['y'] = this.domOffsetY+dom.clientHeight
       this.scrollMove['uptodown'] = true;
     }
     if(now['x']>this.domOffsetX+dom.clientWidth){
-      now['x'] = this.domOffsetX+this.container.nativeElement.clientWidth
+      now['x'] = this.domOffsetX+dom.clientWidth
       this.scrollMove['lefttodown'] = true;
     }
     let width;
     let height;
     let left;
     let top;
-    width = Math.abs(now['x']-old['x'])+scrollLeft-this.clickScroll['left']
+    width = Math.abs(now['x']-old['x'])+Math.abs(scrollLeft-this.clickScroll['left'])
     height = Math.abs(now['y']-old['y'])+Math.abs(scrollTop-this.clickScroll['top'])
     if(now['x']>old['x']){
       left = old['x']-this.domOffsetX+this.clickScroll['left'];
@@ -127,19 +134,57 @@ export class SelectSquireComponent implements OnInit,OnDestroy,AfterViewInit {
     }else{
       top = now['y'] - this.domOffsetY+scrollTop;
     }
-    if(height+top+50>dom.clientHeight+dom.scrollTop&&height+top<this.clickScroll['height']&&this.scrollMove['uptodown']){
-      dom.scrollTo(dom.scrollLeft,dom.scrollTop+5);
+    if(now['y'] >= this.domOffsetY+dom.clientHeight&&height+top<this.clickScroll['height']){
+      this.scrollupdownIntervel = setInterval(()=>{
+        dom.scrollTo(dom.scrollLeft,dom.scrollTop+5);
+        scrollTop = dom.scrollTop;
+        height = Math.abs(now['y']-old['y'])+Math.abs(scrollTop-this.clickScroll['top'])
+        this.createLine(width,height,left,top,dom)
+        if(height+top+20>this.clickScroll['height']){
+          clearInterval(this.scrollupdownIntervel)
+        }
+      },10)
     }
-    if(now['y']-50<this.domOffsetY&&!this.scrollMove['uptodown']){
-      dom.scrollTo(dom.scrollLeft,dom.scrollTop-5);
+    if(now['y']<=this.domOffsetY+20){
+      this.scrollupdownIntervel = setInterval(()=>{
+        dom.scrollTo(dom.scrollLeft,dom.scrollTop-5);
+        scrollTop = dom.scrollTop;
+        height = Math.abs(now['y']-old['y'])+Math.abs(scrollTop-this.clickScroll['top'])
+        top = now['y'] - this.domOffsetY+scrollTop;
+        this.createLine(width,height,left,top,dom)
+        if(scrollTop==0){
+          clearInterval(this.scrollupdownIntervel)
+        }
+      },10)
     }
-    if(left+width+50>dom.clientWidth+dom.scrollLeft&&left+width<this.clickScroll['width']&&this.scrollMove['lefttoright']){
-      dom.scrollTo(dom.scrollLeft+5,dom.scrollTop);
+    if(now['x'] >= this.domOffsetX+dom.clientWidth&&left+width<this.clickScroll['width']){
+      this.scrollleftrightInterval = setInterval(()=>{
+        dom.scrollTo(dom.scrollLeft+5,dom.scrollTop);
+        scrollLeft = dom.scrollLeft;
+        width = Math.abs(now['x']-old['x'])+Math.abs(scrollLeft-this.clickScroll['left'])
+        this.createLine(width,height,left,top,dom)
+        if(left+width+20>this.clickScroll['width']){
+          clearInterval(this.scrollleftrightInterval)
+        }
+      },10)
+    }
+    if(now['x']<this.domOffsetX+20){
+      this.scrollleftrightInterval = setInterval(()=>{
+        dom.scrollTo(dom.scrollLeft-5,dom.scrollTop);
+        scrollLeft = dom.scrollLeft;
+        width = Math.abs(now['x']-old['x'])+Math.abs(scrollLeft-this.clickScroll['left'])
+        left = now['x']-this.domOffsetX+scrollLeft;
+        this.createLine(width,height,left,top,dom)
+        if(scrollLeft==0){
+          clearInterval(this.scrollleftrightInterval)
+        }
+      },10)
     }
     if(now['x']<this.domOffsetX&&!this.scrollMove['lefttoright']){
       dom.scrollTo(dom.scrollLeft-5,dom.scrollTop);
     }
-    this.createLine(width,height,left,top)
+    // console.log(dom.clientHeight)
+    this.createLine(width,height,left,top,dom)
   }
   handleBodyMove(old,now,dom){
     let scrollTop = dom.scrollTop;
@@ -178,9 +223,10 @@ export class SelectSquireComponent implements OnInit,OnDestroy,AfterViewInit {
     if(now['x']-50<dom.scrollLeft&&!this.scrollMove['lefttoright']){
       dom.scrollTo(dom.scrollLeft-5,dom.scrollTop)
     }
-    this.createLine(width,height,left,top)
+    
+    this.createLine(width,height,left,top,dom)
   }
-  createLine(width,height,left,top){//画线框
+  createLine(width,height,left,top,dom){//画线框
     this.lineStyle = {
       width:width+"px",
       height:height+"px",
@@ -198,6 +244,12 @@ export class SelectSquireComponent implements OnInit,OnDestroy,AfterViewInit {
     this.selectChild()
     this.isMove = false;
     this.reset()
+    if(this.scrollupdownIntervel){
+      clearInterval(this.scrollupdownIntervel)
+    }
+    if(this.scrollleftrightInterval){
+      clearInterval(this.scrollleftrightInterval)
+    }
   }
   getAllOffset(){//获取偏移量
     let dom = this.container.nativeElement
@@ -261,7 +313,13 @@ export class SelectSquireComponent implements OnInit,OnDestroy,AfterViewInit {
     
   }
   isScrollBar(dom){//判断是否有滚动条
-    return dom['scrollHeight']>dom['clientHeight']
+    if(dom['scrollHeight']>dom['clientHeight']){
+      return true
+    }else if(dom['scrollWidth']>dom['clientWidth']){
+      return true
+    }else{
+      return false
+    }
   }
   checkScrollDom(){//检测我们需要的滚动条
     let dom,type;
