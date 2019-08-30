@@ -259,8 +259,8 @@ export class SelectSquireComponent implements OnInit,OnDestroy,AfterViewInit {
       t+=dom.offsetTop;
       l+=dom.offsetLeft;
     }
-    this.domOffsetX = t;
-    this.domOffsetY = l;
+    this.domOffsetX = l;
+    this.domOffsetY = t;
   }
   pauseEvent(e){
     if(e.stopPropagation) e.stopPropagation();
