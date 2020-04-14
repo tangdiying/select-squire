@@ -1,4 +1,4 @@
-<div class="block-top"></div>
+<!-- <div class="block-top"></div>
 <div class="block-container" style="display: flex;overflow: auto;">
   <div class="block-left"></div>
   <div class="tdy">
@@ -15,4 +15,10 @@
     <div style="height: 500px;background: lightgoldenrodyellow"></div>
   </div>
 
+</div> -->
+<div class="file-list" appSelectData [allData]="filedata" [handleDom]="'father'" [scrollClass]="'file-list'" (selectedData)="selectedData($event)" 
+  [childrenClass]="'child'" style="padding-left: 20px;padding-right: 20px;">
+  <div class="father" id="father">
+    <div class="child" *ngFor="let item of squareArray">{{item}}</div>
+  </div>
 </div>
